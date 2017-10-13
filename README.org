@@ -1,0 +1,4 @@
+* About
+
+Contains slides for a talk on my explorations in R7RS and my most
+involved Scheme project so far, [[https://github.com/wasamasa/waka][waka]].

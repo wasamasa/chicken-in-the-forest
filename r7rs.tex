@@ -1,0 +1,284 @@
+% Created 2017-10-12 Thu 00:42
+\documentclass[presentation]{beamer}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{fixltx2e}
+\usepackage{graphicx}
+\usepackage{longtable}
+\usepackage{float}
+\usepackage{wrapfig}
+\usepackage{rotating}
+\usepackage[normalem]{ulem}
+\usepackage{amsmath}
+\usepackage{textcomp}
+\usepackage{marvosym}
+\usepackage{wasysym}
+\usepackage{amssymb}
+\usepackage{hyperref}
+\tolerance=1000
+\usepackage{tabu}
+\usepackage{minted}
+\usepackage[english]{babel}
+\hypersetup{pdfauthor="Vasilij Schneidermann", pdftitle="The state of R7RS - Implementing MAL in portable Scheme", colorlinks, linkcolor=black, urlcolor=blue}
+\usetheme{Rochester}
+\usecolortheme[RGB={87,83,170}]{structure}
+\author{Vasilij Schneidermann}
+\date{October 2017}
+\title{The state of R7RS - Implementing MAL in portable Scheme}
+\hypersetup{
+  pdfkeywords={},
+  pdfsubject={},
+  pdfcreator={Emacs 25.3.1 (Org mode 8.2.10)}}
+\begin{document}
+
+\maketitle
+\begin{frame}{Outline}
+\tableofcontents
+\end{frame}
+
+\AtBeginSection{\frame{\sectionpage}}
+
+\section{Intro}
+\label{sec-1}
+
+\begin{frame}[fragile,label=sec-1-1]{About}
+ \begin{itemize}
+\item Vasilij Schneidermann, 25
+\item Software developer at bevuta IT, Cologne
+\item Currently contracting at \texttt{\$BIGCORP}
+\item \texttt{v.schneidermann@gmail.com}
+\item \url{https://github.com/wasamasa}
+\item \url{http://emacshorrors.com/}
+\item \url{http://emacsninja.com/}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label=sec-1-2]{Motivation}
+\begin{itemize}
+\item CHICKEN isn't the only Scheme worth using
+\item R5RS without extensions is rather limiting
+\item R6RS failed (Chez not withstanding)
+\item What about R7RS?
+\item Is it usable?
+\item What's ahead of us?
+\end{itemize}
+\end{frame}
+
+\section{RNRS}
+\label{sec-2}
+
+\begin{frame}[fragile,label=sec-2-1]{General}
+ \begin{itemize}
+\item Started out as Report and Revised Report on the algorithmic language Scheme
+\item Revised Revised Report on the algorithmic language Scheme \texttt{->} R2RS
+\item Community-driven standard
+\item Unanimous vote required to pass new revision
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label=sec-2-2]{R5RS (1998)}
+\begin{itemize}
+\item The baseline
+\item 50 pages
+\item Notable features: Numeric tower, continuations, multiple values,
+TCO, hygienic macros
+\item Not quite enough, implementations typically provide extensions (such
+as a module system, records, string ports, etc.)
+\item Most widely implemented standard
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile,label=sec-2-3]{R6RS (2007)}
+ \begin{itemize}
+\item The controversial one
+\item Broke with unanimous vote
+\item 190 pages in total (standard, libraries, rationale, appendix)
+\item Adds libraries, bytevectors, UTF-8/16/32 support, two kinds of
+records, exceptions (with condition hierarchy), a second ports API,
+bitwise arithmetic, \texttt{syntax-case}, hash tables, enums, etc.
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile,label=sec-2-4]{R7RS (2013-?)}
+ \begin{itemize}
+\item Aims to fix R6RS
+\item Almost compatible to R6RS (library definitions, \texttt{\#!r6rs}, errata)
+\item R7RS-small: Like R5RS, removes the controversial R6RS parts
+\item R7RS-large: Provides a big standard library in form of SRFIs
+\item \url{https://github.com/ecraven/r7rs-benchmarks}
+\item \url{https://github.com/ecraven/r7rs-coverage}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile,label=sec-2-5]{R7RS-small (2013)}
+ \begin{itemize}
+\item 90 pages, minimalist
+\item Adds records, libraries, \texttt{cond-expand}, exceptions, bytevectors,
+string/bytevector ports, parameters, timing, etc.
+\item Many small fixes, some complications (number literal
+incompatibility, \texttt{\#true} / \texttt{\#false} literals)
+\item Considerable number of implementations exist by now
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label=sec-2-6]{R7RS-large (ongoing)}
+\begin{itemize}
+\item Organized by rainbow-colored dockets
+\item Might surpass CL standard in size (and time to completion)
+\item Red: Data structures (done)
+\item Orange: Numbers (TBD)
+\item Yellow: Syntax (TBD)
+\item Green: Non-portable (TBD)
+\item Blue: Further extensions (TBD)
+\item Indigo: Extensions of doubtful merit (TBD)
+\end{itemize}
+\end{frame}
+
+\section{Evaluation with MAL}
+\label{sec-3}
+
+\begin{frame}[label=sec-3-1]{What is MAL?}
+\begin{itemize}
+\item Make A Lisp
+\item Guide for making a Lisp interpreter
+\item Clojure-like, minimalistic, bootstrappable language
+\item Implemented in 70+ languages
+\item TDD approach with > 600 unit tests
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label=sec-3-2]{Why MAL?}
+\begin{itemize}
+\item Non-trivial, yet tractable exercise
+\item Implementing this should uncover plenty bugs
+\item R7RS-small covers just enough to make it possible
+\item I know it reasonably well (handed in four implementations so far)
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label=sec-3-3]{Candidates}
+\begin{center}
+\begin{tabular}{lllll}
+Chibi & Kawa & CHICKEN & Gauche & Picrin\\
+Sagitarrius & Cyclone & Foment & Guile & Racket\\
+Larceny & Mickey & Husk & Gerbil & Rapid\\
+\end{tabular}
+\end{center}
+\end{frame}
+
+\begin{frame}[label=sec-3-4]{Rejects}
+\begin{itemize}
+\item Guile (no R7RS mode or library support)
+\item Larceny (whacky tooling)
+\item Racket (inofficial support, issues with library loading)
+\item Mickey (completely broken)
+\item Picrin (no library loading support)
+\item Husk (superseded by Cyclone)
+\item Rapid (requires a R7RS implementation)
+\item Gerbil (R7RS support is WIP)
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label=sec-3-5]{Chibi}
+\begin{itemize}
+\item The recommended one for full compliance
+\item Comprehensive test suite (reused by others)
+\item No issues encountered
+\item Comes with a few dozen extensions
+\item Used for R7RS scripts, recommended for embedding
+\item Somewhat slow
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label=sec-3-6]{Kawa}
+\begin{itemize}
+\item Not really a GNU thing (as opposed to Guile)
+\item JVM language, good interop (only beaten by Clojure's syntax)
+\item Yet: Fast compiler, small boot time, decent speed, no issues
+\item Contains other language implementations, JEmacs
+\item Works for Android, Applets, \ldots{}
+\item Why isn't it more popular?
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label=sec-3-7]{Gauche}
+\begin{itemize}
+\item Aims to be a practical Scheme distribution
+\item Bundled with many extensions, aimed at scripting
+\item No issues, good speed for an interpreter
+\item Been around for a long time
+\item I might have used this haven't I met\ldots{}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label=sec-3-8]{CHICKEN}
+\begin{itemize}
+\item My personal choice for writing CLI utils and small web apps
+\item Best in terms of speed from all candidates
+\item R7RS support implemented by an egg
+\item Rather tricky to use locally installed libraries, otherwise no issues
+\item Looking forward to CHICKEN 5 fixing this
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label=sec-3-9]{Sagittarius}
+\begin{itemize}
+\item A fork of Gauche
+\item Higher development activity, extra libraries, different build system
+\item Otherwise very similar to it
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label=sec-3-10]{Cyclone}
+\begin{itemize}
+\item Relatively new implementation with similar design choices as CHICKEN
+\begin{itemize}
+\item Cheney on the MTA (with native thread support)
+\item Generational GC (runs concurrently to threads)
+\item Written purely in Scheme
+\item Compiles to C
+\end{itemize}
+\item Actively developed
+\item I've uncovered seven bugs so far and handed in one PR
+\item Not quite as fast as CHICKEN yet
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label=sec-3-11]{Foment}
+\begin{itemize}
+\item Someone's personal learning project
+\item As fast as Chibi
+\item I've reported five bugs and handed in one PR
+\end{itemize}
+\end{frame}
+
+\section{Outro}
+\label{sec-4}
+
+\begin{frame}[label=sec-4-1]{Summary}
+\begin{itemize}
+\item Implementing MAL was successful
+\item I've found a new Scheme to play with (Kawa)
+\item Greatest difficulty: Loading libraries
+\item R7RS-small covers enough for writing useful programs/libraries
+\item R7RS-large is not completely bonkers
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label=sec-4-2]{Further work to be done}
+\begin{itemize}
+\item Further implementations:
+\begin{itemize}
+\item Larceny
+\item Gerbil
+\item \ldots{}
+\end{itemize}
+\item Testing Snow2
+\item Porting something more advanced (GRASS?)
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label=sec-4-3]{Questions?}
+\end{frame}
+% Emacs 25.3.1 (Org mode 8.2.10)
+\end{document}
